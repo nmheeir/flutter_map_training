@@ -446,6 +446,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               options: MapOptions(
                 initialCenter: _currentCenter ?? _defaultLocation,
                 initialZoom: _initialZoom,
+                onPositionChanged: (camera, hasGesture) {
+                  if (hasGesture) {
+                    setState(() {
+                      _isAutoCenter = false;
+                    });
+                  }
+                },
               ),
               children: [
                 openStreetMapTileLayer,
