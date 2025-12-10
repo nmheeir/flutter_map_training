@@ -7,11 +7,9 @@ import 'package:flutter_map_training/plugins/zoombuttons_plugin.dart';
 import 'package:flutter_map_training/service/location_service.dart';
 import 'package:flutter_map_training/tile_layer.dart';
 import 'package:geocoding/geocoding.dart';
-// Import thư viện geodesy với alias 'geo' để tránh trùng tên LatLng
-import 'package:geodesy/geodesy.dart' as geo;
+import 'package:geodesy/geodesy.dart';
 import 'package:geolocator/geolocator.dart'
     hide LocationServiceDisabledException;
-import 'package:latlong2/latlong.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,12 +22,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final MapController _mapController;
   final LocationService _locationService = LocationService();
 
-  // Khởi tạo Geodesy
-  final geo.Geodesy _geodesy = geo.Geodesy();
+  final Geodesy _geodesy = Geodesy();
 
-  // Cấu hình bản đồ
+  // fallback nếu người dùng từ chối cấp quyền truy cập vị trí
   final LatLng _defaultLocation = const LatLng(10.762622, 106.660172);
-  // Định nghĩa vị trí đích (Ví dụ: Thung lũng Silicon)
   final LatLng _destination = const LatLng(37.3340, -122.0102);
 
   LatLng? _currentCenter;
@@ -49,7 +45,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.initState();
     _mapController = MapController();
 
-    // Lấy địa chỉ đích ngay khi mở app (vì nó cố định)
     _updateAddress(_destination).then((addr) {
       if (mounted) setState(() => _destinationAddress = addr);
     });
@@ -63,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  /// Hàm chuyển đổi Tọa độ -> Địa chỉ (Reverse Geocoding)
+  /// Reverse Geocoding
   Future<String> _updateAddress(LatLng coordinates) async {
     try {
       List<Placemark> placemarks = await placemarkFromCoordinates(
@@ -73,16 +68,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        // Ghép các thành phần địa chỉ lại cho gọn
-        // Ví dụ: "123 Đường Lê Lợi, Quận 1, TP.HCM"
         final components =
             [
-                  place.street, // Tên đường/Số nhà
-                  place.subAdministrativeArea, // Quận/Huyện
-                  place.administrativeArea, // Tỉnh/Thành phố
+                  place.street,
+                  place.subAdministrativeArea,
+                  place.administrativeArea,
+                  place.country
                 ]
                 .where((e) => e != null && e.isNotEmpty)
-                .toList(); // Lọc bỏ giá trị null/rỗng
+                .toList();
 
         return components.join(", ");
       }
@@ -96,19 +90,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _calculateMetrics() {
     if (_currentCenter == null) return;
 
-    // Chuyển đổi LatLng của flutter_map sang LatLng của Geodesy
-    final geo.LatLng start = geo.LatLng(
-      _currentCenter!.latitude,
-      _currentCenter!.longitude,
-    );
-    final geo.LatLng end = geo.LatLng(
-      _destination.latitude,
-      _destination.longitude,
-    );
-
     setState(() {
-      // Tính khoảng cách (mét)
-      _distanceInMeters = _geodesy.distanceBetweenTwoGeoPoints(start, end);
+      _distanceInMeters = _geodesy.distanceBetweenTwoGeoPoints(_currentCenter!, _destination);
     });
   }
 
@@ -117,6 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final hasPermission = await _locationService.checkPermission();
 
       if (hasPermission) {
+        // Hủy stream trước đó nếu có
         _positionStreamSubscription?.cancel();
 
         _positionStreamSubscription = _locationService
@@ -185,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() {
       _currentCenter ??= _defaultLocation;
       _isLoading = false;
-      _calculateMetrics(); // Tính toán cho vị trí mặc định
+      _calculateMetrics();
     });
 
     final addr = await _updateAddress(_defaultLocation);
@@ -283,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white, // Bỏ trong suốt để chữ dễ đọc hơn
+            color: Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
@@ -326,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
               // HÀNG 2: THÔNG TIN CHI TIẾT (Địa chỉ)
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start, // Căn lề trên
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // CỘT TRÁI: ĐIỂM ĐI
                   Expanded(
@@ -406,7 +390,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         const SizedBox(height: 4),
                         Text(
                           _destinationAddress,
-                          textAlign: TextAlign.right, // Căn lề phải
+                          textAlign: TextAlign.right,
                           maxLines: 3,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
