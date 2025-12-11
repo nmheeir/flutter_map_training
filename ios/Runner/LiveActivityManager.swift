@@ -35,20 +35,20 @@ class LiveActivityManager {
     func updateLiveActivity(data: [String: Any]?) {
         if let info = data {
             let updatedState = LiveActivityMapAttributes.ContentState(
-                            remainingDistanceStr: info["remainingDistanceStr"] as? String ?? "",
-                            progress: info["progress"] as? Int ?? 0,
-                            minutesToArrive: info["minutesToArrive"] as? Int ?? 0
-                        )
-                        
-                        Task {
-                            await liveActivity?.update(.init(state: updatedState, staleDate: nil))
-                        }
+                remainingDistanceStr: info["remainingDistanceStr"] as? String ?? "",
+                progress: info["progress"] as? Int ?? 0,
+                minutesToArrive: info["minutesToArrive"] as? Int ?? 0
+            )
+            
+            Task {
+                await liveActivity?.update(.init(state: updatedState, staleDate: nil))
+            }
         }
     }
     
-    
     func endLiveActivity() {
         Task {
+            let fifteenMinutesLater = Date().addingTimeInterval(15 * 60)
             await self.liveActivity?.end(dismissalPolicy: .immediate)
         }
     }

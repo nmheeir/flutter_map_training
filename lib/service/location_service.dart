@@ -1,5 +1,5 @@
 // location_service.dart
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -7,6 +7,14 @@ import 'package:permission_handler/permission_handler.dart';
 class LocationServiceDisabledException implements Exception {}
 
 class LocationPermissionPermanentlyDeniedException implements Exception {}
+
+class LocationStreamTimeoutException implements Exception {
+  final String message;
+  LocationStreamTimeoutException([this.message = "Timeout location"]);
+
+  @override
+  String toString() => message;
+}
 
 class LocationService {
   Future<Position?> getCurrentPosition() async {
@@ -33,11 +41,42 @@ class LocationService {
   }
 
   Stream<Position> getPositionStream() {
-    const LocationSettings locationSettings = LocationSettings(
-      accuracy: LocationAccuracy.best,
-    );
+    late LocationSettings locationSettings;
 
-    return Geolocator.getPositionStream(locationSettings: locationSettings);
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      locationSettings = AndroidSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        distanceFilter: 10, // Cập nhật mỗi 10 mét (tùy chỉnh)
+        forceLocationManager: true,
+        intervalDuration: const Duration(seconds: 1),
+        // foregroundNotificationConfig: ... (Cấu hình notification cho Android nếu cần)
+      );
+    } else if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      locationSettings = AppleSettings(
+        accuracy: LocationAccuracy.bestForNavigation,
+        activityType: ActivityType
+            .automotiveNavigation, // Báo cho iOS biết đây là app dẫn đường xe hơi
+        distanceFilter: 10,
+        pauseLocationUpdatesAutomatically: false,
+        showBackgroundLocationIndicator: true,
+        allowBackgroundLocationUpdates: true,
+      );
+    } else {
+      locationSettings = const LocationSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 10,
+      );
+    }
+
+    return Geolocator.getPositionStream(
+      locationSettings: locationSettings,
+    ).timeout(
+      const Duration(seconds: 10),
+      onTimeout: (sink) {
+        sink.addError(LocationStreamTimeoutException());
+      },
+    );
   }
 
   Future<bool> checkPermission() async {
@@ -53,7 +92,9 @@ class LocationService {
     debugPrint('LocationService: Initial location permission status: $status');
 
     if (status.isDenied) {
-      debugPrint('LocationService: Permission is denied, requesting permission...');
+      debugPrint(
+        'LocationService: Permission is denied, requesting permission...',
+      );
       status = await Permission.location.request();
       debugPrint('LocationService: Permission request result: $status');
     }
@@ -63,7 +104,9 @@ class LocationService {
       throw LocationPermissionPermanentlyDeniedException();
     }
 
-    debugPrint('LocationService: Final permission status before returning: ${status.isGranted}');
+    debugPrint(
+      'LocationService: Final permission status before returning: ${status.isGranted}',
+    );
     return status.isGranted;
   }
 

@@ -108,9 +108,9 @@
 			membershipExceptions = (
 				LiveActivityMapAttributes.swift,
 				LiveActivityMapLiveActivity.swift,
-				ProgressBarTrack.swift,
 				View/DestinationArrivedView.swift,
 				View/NavigationTrackingView.swift,
+				View/ProgressBarTrack.swift,
 			);
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 		};

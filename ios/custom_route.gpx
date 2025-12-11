@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<gpx version="1.1">
+  <trk><name>MyRoute</name><trkseg>
+    <trkpt lat="37.3317" lon="-122.0301"></trkpt>
+    <trkpt lat="37.3340" lon="-122.0325"></trkpt>
+    <trkpt lat="37.3360" lon="-122.0350"></trkpt>
+  </trkseg></trk>
+</gpx>
+    

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_map_training/home_screen.dart';
+import 'package:flutter_map_training/screens/home_screen.dart';
 
 void main() {
   runApp(const MainApp());
