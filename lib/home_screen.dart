@@ -68,15 +68,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        final components =
-            [
-                  place.street,
-                  place.subAdministrativeArea,
-                  place.administrativeArea,
-                  place.country
-                ]
-                .where((e) => e != null && e.isNotEmpty)
-                .toList();
+        final components = [
+          place.street,
+          place.subAdministrativeArea,
+          place.administrativeArea,
+          place.country,
+        ].where((e) => e != null && e.isNotEmpty).toList();
 
         return components.join(", ");
       }
@@ -91,28 +88,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     if (_currentCenter == null) return;
 
     setState(() {
-      _distanceInMeters = _geodesy.distanceBetweenTwoGeoPoints(_currentCenter!, _destination);
+      _distanceInMeters = _geodesy.distanceBetweenTwoGeoPoints(
+        _currentCenter!,
+        _destination,
+      );
     });
   }
 
   Future<void> _startLiveTracking() async {
+    debugPrint("_startLiveTracking called");
     try {
       final hasPermission = await _locationService.checkPermission();
+      debugPrint("Location permission status: $hasPermission");
 
       if (hasPermission) {
         // Hủy stream trước đó nếu có
         _positionStreamSubscription?.cancel();
+        debugPrint("Previous position stream cancelled.");
 
         _positionStreamSubscription = _locationService
             .getPositionStream()
             .listen(
               (Position position) async {
-                if (!mounted) return;
+                if (!mounted) {
+                  debugPrint("Not mounted, skipping position update.");
+                  return;
+                }
 
                 final newLocation = LatLng(
                   position.latitude,
                   position.longitude,
                 );
+                debugPrint("Received new position: $newLocation");
 
                 setState(() {
                   _currentCenter = newLocation;
@@ -122,10 +129,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 final address = await _updateAddress(newLocation);
                 if (mounted) {
                   setState(() => _currentAddress = address);
+                  debugPrint("Updated current address: $address");
                 }
 
                 if (_isAutoCenter) {
                   _animatedMapMove(_currentCenter!, _mapController.camera.zoom);
+                  debugPrint("Auto-centering map to: $_currentCenter");
                 }
               },
               onError: (e) {
@@ -133,9 +142,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               },
             );
       } else {
+        debugPrint("Permission not granted, using fallback location.");
         _useFallbackLocation();
       }
     } on LocationServiceDisabledException {
+      debugPrint("LocationServiceDisabledException caught.");
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -143,6 +154,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _useFallbackLocation();
       }
     } on LocationPermissionPermanentlyDeniedException {
+      debugPrint("LocationPermissionPermanentlyDeniedException caught.");
       if (mounted) {
         _showPermissionDialog();
         _useFallbackLocation();
@@ -165,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _useFallbackLocation() async {
+    debugPrint("[_useFallbackLocation] Using fallback location.");
     if (!mounted) return;
     setState(() {
       _currentCenter ??= _defaultLocation;
@@ -177,20 +190,27 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _showPermissionDialog() {
+    debugPrint("[_showPermissionDialog] Showing permission dialog.");
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text("Cần quyền truy cập vị trí"),
         content: const Text(
-          "Ứng dụng cần quyền vị trí để hiển thị bản đồ chính xác. Vui lòng mở Cài đặt và cấp quyền.",
+          "Ứng dụng cần quyền vị cập vị trí để hiển thị bản đồ chính xác. Vui lòng mở Cài đặt và cấp quyền.",
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              debugPrint("[_showPermissionDialog] 'Hủy' button pressed.");
+              Navigator.pop(ctx);
+            },
             child: const Text("Hủy"),
           ),
           TextButton(
             onPressed: () {
+              debugPrint(
+                "[_showPermissionDialog] 'Mở Cài đặt' button pressed. Opening settings.",
+              );
               Navigator.pop(ctx);
               _locationService.openSettings();
             },
@@ -271,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: 0.15),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
