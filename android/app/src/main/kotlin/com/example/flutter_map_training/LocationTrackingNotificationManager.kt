@@ -1,13 +1,17 @@
 package com.example.flutter_map_training
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.os.Build
 import android.widget.RemoteViews
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 
 class LocationTrackingNotificationManager(private val context: Context) {
     private val notificationManager =
@@ -17,6 +21,10 @@ class LocationTrackingNotificationManager(private val context: Context) {
     private val channelName = "Location Tracking Live Update"
 
     private val notificationId = 1
+
+    init {
+        initialize()
+    }
 
     private fun initialize() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -34,7 +42,6 @@ class LocationTrackingNotificationManager(private val context: Context) {
     }
 
     fun startLiveActivity(data: Map<String, Any>?) {
-        initialize()
         updateNotification(data)
     }
 
@@ -84,12 +91,28 @@ class LocationTrackingNotificationManager(private val context: Context) {
         // Build Notification
         val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
-            .setCustomContentView(remoteViews)
-            .setCustomBigContentView(remoteViews)
             .setContentIntent(pendingIntent)
             .setOnlyAlertOnce(true)
+            .setOngoing(true)
             .setRequestPromotedOngoing(true)
+            .apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+                    setStyle(
+                        NotificationCompat.ProgressStyle()
+                            .setProgress(progress)
+                            .setProgressTrackerIcon(
+                                IconCompat.createWithResource(context, R.drawable.ic_directions_car)
+                            )
+                    )
+                    setContentTitle(distance)
+                    setContentText(if (minutes <= 0) "Less than minutes" else "$minutes p")
+                    setShortCriticalText(distance)
+                } else {
+                    setStyle(NotificationCompat.DecoratedCustomViewStyle())
+                    setCustomBigContentView(remoteViews)
+                    setCustomContentView(remoteViews)
+                }
+            }
 
         if (progress >= 100) {
             // Khi đến nơi, bạn có thể cho phép vuốt để xóa (bỏ setOngoing true)
@@ -101,5 +124,12 @@ class LocationTrackingNotificationManager(private val context: Context) {
         }
 
         notificationManager.notify(notificationId, notificationBuilder.build())
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    fun buildBaseProgressStyle(progress: Int) {
+        var progressStyle = Notification.ProgressStyle()
+
+
     }
 }

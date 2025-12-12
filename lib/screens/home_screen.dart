@@ -250,7 +250,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   _currentCenter = newLocation;
                   _calculateMetrics();
                   _totalDistanceInMeters ??= _distanceInMeters;
-                  _updateLiveActivityInfo();
+                  if (_isLocationTracking) {
+                    _updateLiveActivityInfo();
+                  }
                 });
 
                 final address = await _updateAddress(newLocation);
