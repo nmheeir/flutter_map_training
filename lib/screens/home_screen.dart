@@ -1,19 +1,21 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_training/models/map_live_activity.dart';
+import 'package:flutter_map_training/service/live_activity_map_service.dart';
+import 'package:flutter_map_training/service/location_service.dart';
+import 'package:flutter_map_training/service/permission_service.dart';
+import 'package:flutter_map_training/utils/map_helper.dart';
 import 'package:flutter_map_training/widgets/arrival_panel.dart';
+import 'package:flutter_map_training/widgets/map_info_panel.dart';
+import 'package:flutter_map_training/widgets/permission_dialog.dart';
+import 'package:flutter_map_training/widgets/tile_layer.dart';
 import 'package:flutter_map_training/widgets/zoombuttons_plugin.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geodesy/geodesy.dart';
 import 'package:geolocator/geolocator.dart'
     hide LocationServiceDisabledException;
-import 'package:flutter_map_training/service/live_activity_map_service.dart';
-import 'package:flutter_map_training/service/location_service.dart';
-import 'package:flutter_map_training/widgets/tile_layer.dart';
-import 'package:flutter_map_training/widgets/map_info_panel.dart';
-import 'package:flutter_map_training/widgets/permission_dialog.dart';
-import 'package:flutter_map_training/utils/map_helper.dart';
-import 'package:flutter_map_training/models/map_live_activity.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late final MapController _mapController;
+  final PermissionService _permissionService = PermissionService();
   final LocationService _locationService = LocationService();
   final LiveActivityMapService _liveActivityService = LiveActivityMapService();
   final Geodesy _geodesy = Geodesy();
@@ -49,9 +52,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   // đã tới địa điểm hay chưa
   bool _hasArrived = false;
 
-  // khoảng cách hiện tại tới đích 
+  // khoảng cách hiện tại tới đích
   num _distanceInMeters = 0;
-  
+
   String _currentAddress = "Đang tải vị trí...";
   String _destinationAddress = "Đang tải vị trí...";
 
@@ -155,8 +158,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       "Debug: Checking arrival condition. _distanceInMeters: $_distanceInMeters",
     );
 
-    // TRƯỜNG HỢP: ĐÃ ĐẾN NƠI (< 20m)
-    if (_distanceInMeters < 20) {
+    // TRƯỜNG HỢP: ĐÃ ĐẾN NƠI (< 20m) và đang trong trạng thái theo dõi vị trí
+    if (_distanceInMeters < 20 && _isLocationTracking) {
       debugPrint('Đã đến nơi');
       setState(() {
         _hasArrived = true;
@@ -227,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _startLiveTracking() async {
     try {
-      final hasPermission = await _locationService.checkPermission();
+      final hasPermission = await _permissionService.checkAllPermissions();
       debugPrint('hasPermission: $hasPermission');
       if (hasPermission) {
         _positionStreamSubscription?.cancel();
@@ -287,10 +290,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ).showSnackBar(const SnackBar(content: Text('Vui lòng bật GPS')));
         _useFallbackLocation();
       }
-    } on LocationPermissionPermanentlyDeniedException {
+    } on LocationPermissionPermanentlyDeniedException catch (e) {
       if (mounted) {
-        showPermissionDialog(context, _locationService);
+        showPermissionDialog(context, _permissionService, e);
         _useFallbackLocation();
+      }
+    } on NotificationPermissionPermanentlyDeniedException catch (e) {
+      if (mounted) {
+        showPermissionDialog(context, _permissionService, e);
       }
     } catch (e) {
       debugPrint("Lỗi khởi tạo: $e");
