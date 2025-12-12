@@ -11,7 +11,7 @@ import WidgetKit
 
 struct DestinationArrivedView: View {
     let context: ActivityViewContext<LiveActivityMapAttributes>
-
+    
     var body: some View {
         VStack {
             HStack {
@@ -29,6 +29,16 @@ struct DestinationArrivedView: View {
                     .resizable()
                     .frame(width: 40, height: 40)
                     .foregroundColor(.green)
+
+                Link(destination: URL(string: "fluttermap://endTrip")!) {
+                    Text("Got it")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 16)
+                        .background(Color.green)
+                        .cornerRadius(20)
+                }
             }
         }
         .padding(20)
