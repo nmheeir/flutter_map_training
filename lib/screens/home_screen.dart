@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_training/widgets/arrival_panel.dart';
 import 'package:flutter_map_training/widgets/zoombuttons_plugin.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geodesy/geodesy.dart';
@@ -28,16 +29,29 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final Geodesy _geodesy = Geodesy();
 
   final LatLng _defaultLocation = const LatLng(10.762622, 106.660172);
-  final LatLng _destination = const LatLng(37.3340, -122.0102);
+  // Inifinite Loop 1
+  final LatLng _destination = const LatLng(
+    37.33223269789491,
+    -122.03048714611981,
+  );
 
+  // Vị trí hiện tại
   LatLng? _currentCenter;
+  //Độ dài quãng đường cần đi ban đầu
   num? _totalDistanceInMeters;
   final double _initialZoom = 15;
+  // load map
   bool _isLoading = true;
+  // auto focus vị trí hiện tại trên map
   bool _isAutoCenter = true;
+  // có đang track location hay không
   bool _isLocationTracking = false;
+  // đã tới địa điểm hay chưa
+  bool _hasArrived = false;
 
+  // khoảng cách hiện tại tới đích 
   num _distanceInMeters = 0;
+  
   String _currentAddress = "Đang tải vị trí...";
   String _destinationAddress = "Đang tải vị trí...";
 
@@ -52,11 +66,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (mounted) setState(() => _destinationAddress = addr);
     });
 
-    _totalDistanceInMeters = _geodesy.distanceBetweenTwoGeoPoints(
-      _defaultLocation,
-      _destination,
-    );
-
     _startLiveTracking();
   }
 
@@ -68,11 +77,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _initLiveActivity() {
+    int minutes = 0;
+
+    if (_totalDistanceInMeters != null) {
+      minutes = (_totalDistanceInMeters! / 500).round();
+    }
+
     _liveActivityService.startLiveActivity(
       data: MapLiveActivity(
         remainingDistanceStr: "Bắt đầu di chuyển",
         progress: 0,
-        minutesToArrive: 0,
+        minutesToArrive: minutes,
       ),
     );
   }
@@ -113,29 +128,101 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _updateLiveActivityInfo() {
-    if (_totalDistanceInMeters == null || _totalDistanceInMeters == 0) return;
+    debugPrint("Khoảng cách hiện tại: $_distanceInMeters m");
+    if (_totalDistanceInMeters == null || _totalDistanceInMeters == 0) {
+      debugPrint("Debug: _totalDistanceInMeters is null or 0. Returning.");
+      return;
+    }
+    if (_distanceInMeters > _totalDistanceInMeters!) {
+      debugPrint("Debug: Cập nhật độ dài quãng đưởng phải đi.");
+      _totalDistanceInMeters = _distanceInMeters;
+    }
 
-    double progressPercent =
-        ((_totalDistanceInMeters! - _distanceInMeters) /
-            _totalDistanceInMeters!) *
-        100;
-    int progressInt = progressPercent.clamp(0, 100).toInt();
+    if (_hasArrived) {
+      debugPrint("Debug: Already arrived. _hasArrived is true. Returning.");
+      return;
+    }
 
-    String distanceStr = _distanceInMeters > 1000
-        ? "${(_distanceInMeters / 1000).toStringAsFixed(2)} km"
-        : "${_distanceInMeters.toStringAsFixed(0)} m";
+    if (_distanceInMeters > _totalDistanceInMeters!) {
+      debugPrint(
+        "Debug: _distanceInMeters ($_distanceInMeters) > _totalDistanceInMeters! ($_totalDistanceInMeters). Updating _totalDistanceInMeters.",
+      );
+      _totalDistanceInMeters = _distanceInMeters;
+    }
 
-    _liveActivityService.updateLiveActivity(
-      data: MapLiveActivity(
-        remainingDistanceStr: distanceStr,
-        progress: progressInt,
-        minutesToArrive: (_distanceInMeters / 500).round(),
-      ),
+    // CHECK KHOẢNG CÁCH ĐẾN ĐÍCH
+    debugPrint(
+      "Debug: Checking arrival condition. _distanceInMeters: $_distanceInMeters",
     );
 
+    // TRƯỜNG HỢP: ĐÃ ĐẾN NƠI (< 20m)
     if (_distanceInMeters < 20) {
-      _liveActivityService.endLiveActivity();
+      debugPrint('Đã đến nơi');
+      setState(() {
+        _hasArrived = true;
+        _isLocationTracking = false;
+      });
+
+      // Gửi update cuối cùng sang iOS: Progress 100%
+      _liveActivityService.updateLiveActivity(
+        data: MapLiveActivity(
+          remainingDistanceStr: "Đã đến",
+          progress: 100,
+          minutesToArrive: 0,
+        ),
+      );
+      debugPrint(
+        "Debug: Live Activity updated for arrival: progress 100%, 0 mins.",
+      );
+    } else {
+      debugPrint('Đang di chuyển');
+      debugPrint('_distanceInMeters < 20: ${_distanceInMeters < 20}');
+      // TRƯỜNG HỢP: ĐANG DI CHUYỂN
+      double progressPercent =
+          ((_totalDistanceInMeters! - _distanceInMeters) /
+              _totalDistanceInMeters!) *
+          100;
+      int progressInt = progressPercent.clamp(0, 99).toInt();
+      debugPrint(
+        "Debug: Calculated progressPercent: $progressPercent, progressInt: $progressInt",
+      );
+
+      String distanceStr = _distanceInMeters > 1000
+          ? "${(_distanceInMeters / 1000).toStringAsFixed(2)} km"
+          : "${_distanceInMeters.toStringAsFixed(0)} m";
+      debugPrint("Debug: Formatted distanceStr: $distanceStr");
+
+      _liveActivityService.updateLiveActivity(
+        data: MapLiveActivity(
+          remainingDistanceStr: distanceStr,
+          progress: progressInt,
+          minutesToArrive: (_distanceInMeters / 500).round(),
+        ),
+      );
+      debugPrint(
+        "Debug: Live Activity updated for tracking: distance $distanceStr, progress $progressInt%, minutes ${(_distanceInMeters / 500).round()}.",
+      );
     }
+  }
+
+  void _finishTrip() {
+    _liveActivityService.endLiveActivity();
+
+    // Reset trạng thái App về ban đầu
+    setState(() {
+      _hasArrived = false;
+      _isLocationTracking = false;
+      _totalDistanceInMeters = null;
+      // _currentCenter = null;
+      _positionStreamSubscription?.cancel();
+    });
+
+    animatedMapMove(
+      _mapController,
+      this,
+      _currentCenter!,
+      _mapController.camera.zoom,
+    );
   }
 
   Future<void> _startLiveTracking() async {
@@ -148,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             .getPositionStream()
             .listen(
               (Position position) async {
-                debugPrint('Position: ${position.toJson()}');
+                // debugPrint('Position: ${position.toJson()}');
                 if (!mounted) return;
 
                 final newLocation = LatLng(
@@ -242,10 +329,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _liveActivityService.endLiveActivity();
     } else {
       _initLiveActivity();
+      _startLiveTracking();
     }
     setState(() {
       _isLocationTracking = !_isLocationTracking;
     });
+  }
+
+  Widget _buildTopPanel() {
+    if (_hasArrived) {
+      return ArrivalPanel(
+        key: const ValueKey("arrival_panel"),
+        onFinish: _finishTrip,
+      );
+    }
+
+    if (_isLocationTracking) {
+      return MapInfoPanel(
+        key: const ValueKey("map_info_panel"),
+        distanceInMeters: _distanceInMeters,
+        currentAddress: _currentAddress,
+        destinationAddress: _destinationAddress,
+        currentCenter: _currentCenter,
+        destination: _destination,
+      );
+    }
+
+    return const SizedBox.shrink(key: ValueKey("empty_panel"));
   }
 
   @override
@@ -299,15 +409,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     ],
                   ),
 
-                // Widget đã tách
-                Visibility(
-                  visible: _isLocationTracking,
-                  child: MapInfoPanel(
-                    distanceInMeters: _distanceInMeters,
-                    currentAddress: _currentAddress,
-                    destinationAddress: _destinationAddress,
-                    currentCenter: _currentCenter,
-                    destination: _destination,
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  child: SafeArea(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: _buildTopPanel(),
+                    ),
                   ),
                 ),
 

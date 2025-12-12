@@ -16,19 +16,19 @@ class LiveActivityMapService {
     }
   }
 
-  // Future<void> pauseLiveActivity({required MapLiveActivity data}) async {
-  //   try {
-      
-  //   } on PlatformException catch (e) {
-  //     log("Failed to pause live activity: '${e.message}'.");
-  //   }
-  // }
-
   Future<void> updateLiveActivity({required MapLiveActivity data}) async {
     try {
       await platform.invokeMethod('updateLiveActivity', data.toJson());
     } on PlatformException catch (e) {
       log("Failed to start live activity: '${e.message}'.");
+    }
+  }
+
+  Future<void> completeActivity() async {
+    try {
+      await platform.invokeMethod('completeActivity');
+    } on PlatformException catch (e) {
+      log("Failed to complete live activity: '${e.message}'.");
     }
   }
 

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:baselineAligned="false"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Còn lại"
+                android:textColor="#808080"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_distance"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 km"
+                android:textColor="#000000"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="end"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Dự kiến"
+                android:textColor="#808080"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_minutes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 p"
+                android:textColor="#4CAF50"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Text hiển thị % -->
+        <TextView
+            android:id="@+id/tvProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0%"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Khung chứa progress + icon -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <!-- Thanh progress -->
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="24dp"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="#2196F3"
+                android:backgroundTint="#D0D0D0"/>
+
+            <!-- Icon xe hơi chạy theo tiến độ -->
+            <ImageView
+                android:id="@+id/carIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Icon Car"
+                android:src="@drawable/ic_directions_car"
+                android:layout_gravity="center_vertical"
+                android:translationX="0dp"/>
+        </FrameLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

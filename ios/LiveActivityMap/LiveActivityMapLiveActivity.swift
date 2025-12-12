@@ -42,7 +42,10 @@ struct LiveActivityMapLiveActivity: Widget {
                         Text("Dự kiến")
                             .font(.caption)
                             .foregroundColor(.gray)
-                        Text("\(context.state.minutesToArrive) p")
+
+                        Text(context.state.minutesToArrive <= 0
+                             ? "Ít hơn 1 phút"
+                             : "\(context.state.minutesToArrive) p")
                             .font(.headline)
                             .foregroundColor(.green)
                     }

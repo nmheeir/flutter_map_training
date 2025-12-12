@@ -12,7 +12,7 @@ import WidgetKit
 // View: Đang di chuyển
 struct NavigationTrackingView: View {
     let context: ActivityViewContext<LiveActivityMapAttributes>
-
+    
     var body: some View {
         VStack(spacing: 12) {
             HStack {
@@ -24,10 +24,15 @@ struct NavigationTrackingView: View {
                     HStack {
                         Image(systemName: "map.fill")
                             .foregroundColor(.blue)
-                        Text("Cách \(context.state.remainingDistanceStr) • \(context.state.minutesToArrive) phút")
-                            .font(.system(size: 14))
-                            .foregroundColor(.gray)
+                        
+                        Text("Cách \(context.state.remainingDistanceStr) • " +
+                             (context.state.minutesToArrive <= 0
+                              ? "Ít hơn 1 phút"
+                              : "\(context.state.minutesToArrive) phút"))
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
                     }
+                    
                 }
                 Spacer()
                 

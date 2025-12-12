@@ -49,7 +49,12 @@ class LocationService {
         distanceFilter: 10, // Cập nhật mỗi 10 mét (tùy chỉnh)
         forceLocationManager: true,
         intervalDuration: const Duration(seconds: 1),
-        // foregroundNotificationConfig: ... (Cấu hình notification cho Android nếu cần)
+       foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: "Đang theo dõi lộ trình",
+          notificationText: "Ứng dụng đang lấy vị trí của bạn dưới nền",
+          enableWakeLock: true,
+          setOngoing: true
+        ),
       );
     } else if (defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS) {
