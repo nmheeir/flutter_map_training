@@ -25,7 +25,7 @@ class LocationService {
           notificationTitle: "Đang theo dõi lộ trình",
           notificationText: "Ứng dụng đang lấy vị trí của bạn dưới nền",
           enableWakeLock: true,
-          setOngoing: true,
+          // setOngoing: true,
         ),
       );
     } else if (defaultTargetPlatform == TargetPlatform.iOS ||

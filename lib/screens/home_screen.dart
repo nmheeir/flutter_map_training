@@ -33,16 +33,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   final LatLng _defaultLocation = const LatLng(10.762622, 106.660172);
   // Inifinite Loop 1
-  final LatLng _destination = const LatLng(
-    37.33223269789491,
-    -122.03048714611981,
-  );
+  final LatLng _destination = const LatLng(37.330535, -122.029850);
 
   // Vị trí hiện tại
   LatLng? _currentCenter;
   //Độ dài quãng đường cần đi ban đầu
   num? _totalDistanceInMeters;
-  final double _initialZoom = 15;
+  final double _initialZoom = 16;
   // load map
   bool _isLoading = true;
   // auto focus vị trí hiện tại trên map
@@ -64,6 +61,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _mapController = MapController();
+
+    _liveActivityService.onEndTripStream.listen((event) {
+      debugPrint("Flutter received method: ${event.methodName}");
+
+      switch (event.methodName) {
+        case 'endTrip':
+          debugPrint('endTrip');
+          _finishTrip();
+          break;
+        case 'pauseTrip':
+          // _pauseTrip();
+          break;
+        default:
+          debugPrint("Unknown method from native: ${event.methodName}");
+      }
+    });
 
     _updateAddress(_destination).then((addr) {
       if (mounted) setState(() => _destinationAddress = addr);
@@ -217,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _isLocationTracking = false;
       _totalDistanceInMeters = null;
       // _currentCenter = null;
-      _positionStreamSubscription?.cancel();
+      // _positionStreamSubscription?.cancel();
     });
 
     animatedMapMove(

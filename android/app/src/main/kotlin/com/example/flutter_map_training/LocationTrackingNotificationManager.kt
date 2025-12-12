@@ -115,21 +115,27 @@ class LocationTrackingNotificationManager(private val context: Context) {
             }
 
         if (progress >= 100) {
-            // Khi đến nơi, bạn có thể cho phép vuốt để xóa (bỏ setOngoing true)
-            // Hoặc giữ nguyên true nếu muốn user phải vào app bấm nút "Kết thúc"
-            notificationBuilder.setOngoing(true)
+            val endIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("FLUTTER_METHOD", "endTrip")
+            }
+            val endPendingIntent = PendingIntent.getActivity(
+                context,
+                1,
+                endIntent,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+
+            notificationBuilder.apply {
+                setOngoing(false)
+                addAction(NotificationCompat.Action.Builder(null, "End", endPendingIntent).build())
+            }
         } else {
             // Khi đang đi, bắt buộc không cho vuốt xóa
             notificationBuilder.setOngoing(true)
         }
 
         notificationManager.notify(notificationId, notificationBuilder.build())
-    }
-
-    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
-    fun buildBaseProgressStyle(progress: Int) {
-        var progressStyle = Notification.ProgressStyle()
-
-
     }
 }

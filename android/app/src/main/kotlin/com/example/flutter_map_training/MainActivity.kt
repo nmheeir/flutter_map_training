@@ -1,5 +1,6 @@
 package com.example.flutter_map_training
 
+import android.content.Intent
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -40,6 +41,15 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        val methodName = intent.getStringExtra("FLUTTER_METHOD")
+
+        if (methodName != null) {
+            methodChannel?.invokeMethod(methodName, null)
         }
     }
 }
